@@ -136,7 +136,8 @@ async def limited_fetch_scrobbles(
 
     async with semaphore:
         res = await fetch_recent_tracks(session, username, page, since, until)
-        print(f"fetched page {page}.")
+        if page % 20 == 0:
+            print(f"fetched scrobbles of page {page}.")
         return res[1]
 
 
