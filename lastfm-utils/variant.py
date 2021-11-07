@@ -1,5 +1,6 @@
 import asyncio
 import csv
+import os
 from typing import Dict, List, Tuple
 
 from fetch import Scrobble, update_or_fetch_scrobbles
@@ -12,7 +13,7 @@ def load_scrobbles(username: str) -> List[Scrobble]:
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         for row in reader:
-            res.append(Scrobble(*row[1:]))
+            res.append(Scrobble(row[1], row[2], row[3], int(row[4])))
 
     return res
 
@@ -60,6 +61,7 @@ def find_variant(username: str) -> None:
                 variant_dict[tuple(dupl)].append(title)
 
     csv_path = f"data/others/{username}_variant.csv"
+    os.makedirs("data/others/", exist_ok=True)
 
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
