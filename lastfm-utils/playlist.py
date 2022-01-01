@@ -63,7 +63,7 @@ def calculate_top_tracks(username: str) -> Tuple[datetime, List[Counter]]:
     start = datetime.fromtimestamp(scrobbles[0].time)
     end = datetime.fromtimestamp(scrobbles[-1].time)
 
-    ref_time = datetime(end.year, end.month - (end.month % 2) + 1, 1)
+    ref_time = datetime(end.year, (end.month - (end.month % 2) + 1) % 12, 1)
     count = (ref_time.month - start.month) // 2 + (ref_time.year - start.year) * 6
 
     counter_list = []
