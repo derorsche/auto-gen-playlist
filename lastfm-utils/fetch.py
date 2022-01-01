@@ -97,32 +97,33 @@ async def fetch_recent_tracks(
         payload["to"] = int(until.timestamp())
 
     async with session.get(root, params=payload, headers=headers) as resp:
-        try:
-            resp.raise_for_status()
-            res = await resp.json()
-            scrobbles = []
+        while True:
+            try:
+                resp.raise_for_status()
+                res = await resp.json()
+                scrobbles = []
 
-            for track in res["recenttracks"]["track"]:
-                if "date" not in track:
-                    continue
-                else:
-                    scrobbles.append(
-                        Scrobble(
-                            track["name"],
-                            track["artist"]["#text"],
-                            track["album"]["#text"],
-                            int(track["date"]["uts"]),
+                for track in res["recenttracks"]["track"]:
+                    if "date" not in track:
+                        continue
+                    else:
+                        scrobbles.append(
+                            Scrobble(
+                                track["name"],
+                                track["artist"]["#text"],
+                                track["album"]["#text"],
+                                int(track["date"]["uts"]),
+                            )
                         )
-                    )
-            return (int(res["recenttracks"]["@attr"]["totalPages"]), scrobbles)
+                return (int(res["recenttracks"]["@attr"]["totalPages"]), scrobbles)
 
-        except aiohttp.ClientResponseError as err:
-            print("{}: {}".format(type(err).__name__, err))
-            return (0, [])
+            except aiohttp.ClientResponseError as err:
+                print("{}: {}".format(type(err).__name__, err))
+                await asyncio.sleep(3)
 
-        except KeyError as err:
-            print("{}: {}".format(type(err).__name__, err))
-            return (0, [])
+            except KeyError as err:
+                print("{}: {}".format(type(err).__name__, err))
+                return (0, [])
 
 
 async def limited_fetch_scrobbles(
