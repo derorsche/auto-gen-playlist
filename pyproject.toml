@@ -5,7 +5,7 @@ description = ""
 authors = ["derorsche <90059514+derorsche@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 aiohttp = {extras = ["speedups"], version = "^3.8.0"}
 
 [tool.poetry.dev-dependencies]
@@ -13,6 +13,7 @@ black = "^21.10b0"
 flake8 = "^4.0.1"
 ipykernel = "^6.5.0"
 requests = "^2.26.0"
+mypy = "^0.931"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
