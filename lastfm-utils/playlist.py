@@ -8,12 +8,12 @@ from typing import Dict, List, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from fetch import Scrobble, update_or_fetch_scrobbles
+from utils import misc, tracks
 from variant import load_scrobbles
 
 
 def count_top_tracks(
-    scrobbles: List[Scrobble], removal_dict: Dict[str, str]
+    scrobbles: List[tracks.Scrobble], removal_dict: Dict[str, str]
 ) -> Counter:
     """
     returns a counter of (title, artist) except for songs in removal_dict.
@@ -86,7 +86,8 @@ async def make_top_track_playlists(username: str) -> None:
     csv_path = f"data/others/{username}_top_tracks.csv"
     removal_dict = {}
 
-    await update_or_fetch_scrobbles(username)
+    misc.set_environment_var()
+    await tracks.update_or_fetch_scrobbles(username)
     since, counter_list = calculate_top_tracks(username)
 
     with open(csv_path, "w", newline="", encoding="utf-8") as f:

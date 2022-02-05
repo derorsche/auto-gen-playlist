@@ -3,22 +3,24 @@ import csv
 import os
 from typing import Dict, List, Tuple
 
-from fetch import Scrobble, update_or_fetch_scrobbles
+from utils import misc, tracks
 
 
-def load_scrobbles(username: str) -> List[Scrobble]:
+def load_scrobbles(username: str) -> List[tracks.Scrobble]:
     csv_path = f"data/scrobbles/{username}_scrobbles.csv"
     res = []
 
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         for row in reader:
-            res.append(Scrobble(row[1], row[2], row[3], int(row[4])))
+            res.append(tracks.Scrobble(row[2], row[3], row[4], int(row[1])))
 
     return res
 
 
-def make_song_dict(scrobbles: List[Scrobble]) -> Dict[str, Dict[Tuple[str], int]]:
+def make_song_dict(
+    scrobbles: List[tracks.Scrobble],
+) -> Dict[str, Dict[Tuple[str], int]]:
     """
     from saved scrobbles, make a dict like {title: {(artist, album): count}}
 
@@ -73,7 +75,8 @@ async def main() -> None:
     print("Enter the username of the account you want to find song variants.")
     username = input("username: ")
 
-    await update_or_fetch_scrobbles(username)
+    misc.set_environment_var()
+    await tracks.update_or_fetch_scrobbles(username)
     find_variant(username)
 
 
