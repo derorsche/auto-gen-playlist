@@ -3,11 +3,15 @@ formatters:
   default:
     format: '[%(asctime)s] %(name)s - %(levelname)s: %(message)s'
     datefmt: '%Y-%m-%d %H:%M:%S'
+filters:
+  stream_handler_filter:
+    (): __main__.StreamHandlerFilter
 handlers:
   console:
     class: logging.StreamHandler
     formatter: default
     stream: ext://sys.stdout
+    filters: [stream_handler_filter]
   file:
     class: logging.handlers.RotatingFileHandler
     formatter: default
@@ -18,8 +22,10 @@ handlers:
 loggers:
   __main__:
     level: DEBUG
+    handlers: [console]
   auto_gen_playlist:
     level: DEBUG
+    handlers: [console]
   root:
     level: ERROR
-    handlers: [file, console]
+    handlers: [file]
