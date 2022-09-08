@@ -1,0 +1,5 @@
+# to create this file, run
+# poetry config virtualenvs.in-project true --local
+
+[virtualenvs]
+in-project = true
