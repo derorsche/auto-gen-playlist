@@ -9,12 +9,10 @@ python = "^3.10"
 aiohttp = {extras = ["speedups"], version = "^3.8.0"}
 PyYAML = "^6.0"
 
-[tool.poetry.dev-dependencies]
-black = "^21.10b0"
-flake8 = "^4.0.1"
-
 [tool.poetry.group.dev.dependencies]
 notebook = "^6.4.12"
+black = "^22.8.0"
+flake8 = "^5.0.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
