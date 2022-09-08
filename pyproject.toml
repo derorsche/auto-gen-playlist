@@ -1,17 +1,20 @@
 [tool.poetry]
-name = "lastfm-utils"
+name = "auto-gen-playlist"
 version = "0.1.0"
 description = ""
 authors = ["derorsche <90059514+derorsche@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 aiohttp = {extras = ["speedups"], version = "^3.8.0"}
+PyYAML = "^6.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.10b0"
 flake8 = "^4.0.1"
-mypy = "^0.931"
+
+[tool.poetry.group.dev.dependencies]
+notebook = "^6.4.12"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
