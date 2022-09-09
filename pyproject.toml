@@ -9,6 +9,7 @@ python = "^3.10"
 aiohttp = {extras = ["speedups"], version = "^3.8.0"}
 PyYAML = "^6.0"
 python-dotenv = "^0.21.0"
+spotipy = "^2.20.0"
 
 [tool.poetry.group.dev.dependencies]
 notebook = "^6.4.12"
