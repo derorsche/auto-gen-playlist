@@ -86,7 +86,7 @@ async def fetch_tracks(
             generate_tracks_url(user, page, since, until)
             for page in range(1, max_pages + 1)
         ],
-        limit=2,
+        limit=3,
     ):
         tracks.extend(res if res is not None else [])
 
@@ -138,13 +138,12 @@ def recursively_remove_elements(res: T) -> T:
         return res
 
 
-async def fetch_tracks_all(user: str, refetch: bool = False) -> list[dict[str, Any]]:
-    """指定したユーザーの`scrobbles`をすべて取得して返します。この際、データ量削減のために、一部の情報は削除します。
-    取得した`scrobbles`はキャッシュとして保存して再利用しますが、`refetch=True`を指定すれば、全データを再取得します。
-    取得に失敗した場合には、空リストを返します。"""
+async def fetch_tracks_all(user: str, refetch: bool = False):
+    """指定したユーザーの`scrobbles`をすべて取得します。この際、データ量削減のために、一部の情報は削除します。
+    取得した`scrobbles`はキャッシュとして保存して再利用しますが、`refetch=True`を指定すれば、全データを再取得します。"""
     if res := await fetch_user_info(user) is None:
         # check if specified user exists
-        return []
+        return
 
     path = CACHE_DIR + f"/scrobbles/{user}.json"
     since = None
@@ -158,7 +157,7 @@ async def fetch_tracks_all(user: str, refetch: bool = False) -> list[dict[str, A
                 logger.error(
                     f"Invalid cache data: '{path}' is maybe broken. Try refetch."
                 )
-                return []
+                return
 
     res = recursively_remove_elements(await fetch_tracks(user, since))
 
@@ -170,4 +169,21 @@ async def fetch_tracks_all(user: str, refetch: bool = False) -> list[dict[str, A
     with open(path, "w", encoding="utf-8") as f:
         json.dump(res, f, indent=4)
 
-    return res
+
+async def load_user_history(
+    user: str, update: bool = False, refetch: bool = False
+) -> list[dict[str, Any]] | None:
+    """指定したユーザーの`scrobbles`のキャッシュを返します。`update=True`を指定した場合、先にキャッシュを更新します。
+    これに加えて、`refetch=True`を指定したときは、キャッシュを破棄して全データを再取得します。
+    キャッシュが存在しない場合や、`scrobbles`の取得に失敗した場合には、`None`を返します。"""
+    path = CACHE_DIR + f"/scrobbles/{user}.json"
+
+    if update:
+        await fetch_tracks_all(user, refetch)
+
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            cache = json.load(f)
+        return cache
+
+    return None
