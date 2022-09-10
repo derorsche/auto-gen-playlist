@@ -80,7 +80,8 @@ def select_proper_track(results: list[dict[str, Any]], title: str, artist: str):
     if res := [
         track
         for track in results
-        if track["name"] == title and track["artists"][0]["name"] == artist
+        if track["name"].casefold() == title.casefold()
+        and track["artists"][0]["name"].casefold() == artist.casefold()
     ]:
         album_idx: int | None = None
         suspected_ep_idx = 0
@@ -89,14 +90,14 @@ def select_proper_track(results: list[dict[str, Any]], title: str, artist: str):
         for idx, track in enumerate(res):
             if (
                 track["album"]["album_type"] == "album"
-                and track["album"]["artists"][0]["name"] == artist
+                and track["album"]["artists"][0]["name"].casefold() == artist.casefold()
             ):
                 album_idx = idx
                 break
 
             if (
                 track["album"]["album_type"] != "compilation"
-                and track["album"]["artists"][0]["name"] == artist
+                and track["album"]["artists"][0]["name"].casefold() == artist.casefold()
                 and track["album"]["total_tracks"] > max_total
             ):
                 max_total = track["album"]["total_tracks"]
