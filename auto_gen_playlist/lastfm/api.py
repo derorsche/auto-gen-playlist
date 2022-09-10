@@ -6,7 +6,6 @@ from typing import Any, TypeVar
 from urllib.parse import urlencode
 
 from aiohttp import ClientError, ClientResponse
-
 from auto_gen_playlist.requests import fetch_all, fetch_one
 from auto_gen_playlist.variables import CACHE_DIR, JST
 
@@ -125,7 +124,7 @@ async def fetch_user_info(user: str):
 
 
 def recursively_remove_elements(res: T) -> T:
-    """`res`に含まれる辞書のうち、`image`と`streamable`をキーとする要素を削除します。"""
+    """`res`に含まれる辞書から、`image`と`streamable`をキーとする要素を削除します。"""
     if isinstance(res, dict):
         return {
             k: recursively_remove_elements(res[k])
@@ -170,7 +169,7 @@ async def fetch_tracks_all(user: str, refetch: bool = False):
         json.dump(res, f, indent=4)
 
 
-async def load_user_history(
+async def get_user_history(
     user: str, update: bool = False, refetch: bool = False
 ) -> list[dict[str, Any]] | None:
     """指定したユーザーの`scrobbles`のキャッシュを返します。`update=True`を指定した場合、先にキャッシュを更新します。
