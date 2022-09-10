@@ -61,7 +61,7 @@ async def get_user_track_counter(
     return Counter(res)
 
 
-async def get_user_monthly_track_counter(
+async def get_user_two_months_track_counter(
     user: str,
     year: int,
     month: int,
@@ -70,13 +70,13 @@ async def get_user_monthly_track_counter(
     update: bool = False,
     refetch: bool = False,
 ):
-    """ユーザーの`scrobbles`のデータから、指定した月の再生回数の`Counter`を返します。データがない場合には、`None`を返します。
+    """ユーザーの`scrobbles`のデータから、指定した月から2か月分の再生回数の`Counter`を返します。データがない場合には、`None`を返します。
     `update=True`を指定した場合、先にキャッシュを更新します。
     これに加えて、`refetch=True`を指定したときは、キャッシュを破棄して全データを再取得します。"""
     return await get_user_track_counter(
         user,
         datetime(year, month, 1, tzinfo=JST),
-        datetime(year, month, 1, tzinfo=JST) + relativedelta(months=1),
+        datetime(year, month, 1, tzinfo=JST) + relativedelta(months=2),
         ignore_album=ignore_album,
         update=update,
         refetch=refetch,
