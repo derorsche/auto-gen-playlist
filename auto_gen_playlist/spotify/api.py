@@ -96,8 +96,7 @@ def select_proper_track(results: list[dict[str, Any]], title: str, artist: str):
                 break
 
             if (
-                track["album"]["album_type"] != "compilation"
-                and track["album"]["artists"][0]["name"].casefold() == artist.casefold()
+                track["album"]["artists"][0]["name"].casefold() == artist.casefold()
                 and track["album"]["total_tracks"] > max_total
             ):
                 max_total = track["album"]["total_tracks"]
