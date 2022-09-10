@@ -5,7 +5,7 @@ from logging import getLogger
 
 from auto_gen_playlist.lastfm.api import get_user_history
 from auto_gen_playlist.lastfm.misc import bisect_left_with_descending
-from auto_gen_playlist.variables import JST
+from auto_gen_playlist.vars import JST
 from dateutil.relativedelta import relativedelta
 
 logger = getLogger(__name__)

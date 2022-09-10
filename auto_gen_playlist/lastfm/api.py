@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 from aiohttp import ClientError, ClientResponse
 from auto_gen_playlist.requests import fetch_all, fetch_one
-from auto_gen_playlist.variables import CACHE_DIR, JST
+from auto_gen_playlist.vars import CACHE_DIR, JST
 
 ROOT = "http://ws.audioscrobbler.com/2.0/?"
 T = TypeVar("T")
