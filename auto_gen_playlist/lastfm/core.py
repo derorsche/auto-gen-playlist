@@ -1,12 +1,12 @@
 import dataclasses
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 from logging import getLogger
 
-from dateutil.relativedelta import relativedelta
-
-from auto_gen_playlist.lastfm import load_user_history
+from auto_gen_playlist.lastfm.api import get_user_history
+from auto_gen_playlist.lastfm.misc import bisect_left_with_descending
 from auto_gen_playlist.variables import JST
+from dateutil.relativedelta import relativedelta
 
 logger = getLogger(__name__)
 
@@ -22,10 +22,14 @@ async def get_user_track_counter(
     user: str,
     since: datetime | None = None,
     until: datetime | None = None,
+    *,
     ignore_album: bool = False,
+    update: bool = False,
+    refetch: bool = False,
 ):
-    """ユーザーの`scrobbles`のデータから、指定した期間の再生回数の`Counter`を返します。データがない場合には、`None`を返します。"""
-    tracks = await load_user_history(user)
+    """`since <= track["date"] < until`を満たす期間の再生回数の`Counter`を返します。
+    データがない場合には、`None`を返します。"""
+    tracks = await get_user_history(user, update, refetch)
 
     if tracks is None:
         return
@@ -34,18 +38,23 @@ async def get_user_track_counter(
     until_ts = until.timestamp() if until is not None else 2_220_000_000
 
     res: list[Song] = []
-    for track in tracks:
+
+    since_idx = bisect_left_with_descending(
+        tracks, since_ts, key=lambda x: int(x["date"]["uts"])
+    )
+    until_idx = bisect_left_with_descending(
+        tracks, until_ts, key=lambda x: int(x["date"]["uts"])
+    )
+
+    for track in tracks[until_idx:since_idx]:
         try:
-            if not since_ts <= int(track["date"]["uts"]) <= until_ts:
-                continue
-            else:
-                res.append(
-                    Song(
-                        track["name"],
-                        track["artist"]["name"],
-                        track["album"]["#text"] if not ignore_album else "",
-                    )
+            res.append(
+                Song(
+                    track["name"],
+                    track["artist"]["name"],
+                    track["album"]["#text"] if not ignore_album else "",
                 )
+            )
         except KeyError:
             logger.error(f"Unexpected track data: {track=}")
 
@@ -53,14 +62,22 @@ async def get_user_track_counter(
 
 
 async def get_user_monthly_track_counter(
-    user: str, year: int, month: int, ignore_album: bool = False
+    user: str,
+    year: int,
+    month: int,
+    *,
+    ignore_album: bool = False,
+    update: bool = False,
+    refetch: bool = False,
 ):
-    """ユーザーの`scrobbles`のデータから、指定した月の再生回数の`Counter`を返します。データがない場合には、`None`を返します。"""
+    """ユーザーの`scrobbles`のデータから、指定した月の再生回数の`Counter`を返します。データがない場合には、`None`を返します。
+    `update=True`を指定した場合、先にキャッシュを更新します。
+    これに加えて、`refetch=True`を指定したときは、キャッシュを破棄して全データを再取得します。"""
     return await get_user_track_counter(
         user,
         datetime(year, month, 1, tzinfo=JST),
-        datetime(year, month, 1, tzinfo=JST)
-        + relativedelta(months=1)
-        - timedelta(seconds=1),
-        ignore_album,
+        datetime(year, month, 1, tzinfo=JST) + relativedelta(months=1),
+        ignore_album=ignore_album,
+        update=update,
+        refetch=refetch,
     )
