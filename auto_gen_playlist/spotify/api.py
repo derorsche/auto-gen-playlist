@@ -45,12 +45,13 @@ def recursively_remove_elements(res: T) -> T:
 
 
 @automatic_retry
-def search_track(client: Spotify, query: str = "") -> list[dict[str, Any]] | None:
+def search_track(sp: Spotify, query: str = "") -> list[dict[str, Any]] | None:
+    # https://developer.spotify.com/documentation/web-api/reference/#/operations/search
     if not query:
         logger.error("search_track() failed: No search query specified.")
         return
 
-    res: dict[str, Any] = client.search(q=query, limit=20)  # type: ignore
+    res: dict[str, Any] = sp.search(q=query, limit=20)  # type: ignore
 
     if "tracks" in res and "items" in res["tracks"]:
         return recursively_remove_elements(res["tracks"]["items"])
@@ -106,3 +107,103 @@ def select_proper_track(results: list[dict[str, Any]], title: str, artist: str):
 
     else:
         return None
+
+
+@automatic_retry
+def playlist_items(
+    sp: Spotify, id: str, limit: int = 100, offset: int = 0
+) -> dict[str, Any] | None:
+    # https://developer.spotify.com/documentation/web-api/reference/#/operations/get-playlists-tracks
+    try:
+        return sp.playlist_items(playlist_id=id, limit=limit, offset=offset)
+    except SpotifyException as err:
+        if "Invalid playlist Id" in str(err):
+            logger.error(f"Invalid playlist id: {id=}, process skipped.")
+            return
+
+
+def fetch_playlist_songs_all(
+    sp: Spotify, id: str, only_track: bool = True
+) -> list[dict[str, Any]]:
+    """プレイリストに含まれる曲をすべて取得して返します。デフォルトでは、`Episodes`と`Shows`を除外します。
+    取得に失敗した場合には、空リストを返します。"""
+    if res := playlist_items(sp, id, limit=100, offset=0):
+        total: int = res["total"]
+        fetched = 100
+        songs: list[dict[str, Any]] = recursively_remove_elements(
+            [
+                item["track"]
+                for item in res["items"]
+                if not only_track or item["track"]["track"]
+            ]
+        )
+
+        while fetched < total:
+            if res_add := playlist_items(sp, id, limit=100, offset=fetched):
+                songs.extend(
+                    recursively_remove_elements(
+                        [
+                            item["track"]
+                            for item in res_add["items"]
+                            if not only_track or item["track"]["track"]
+                        ]
+                    )
+                )
+
+            fetched += 100
+
+        return songs
+
+    else:
+        return []
+
+
+@automatic_retry
+def audio_features(sp: Spotify, ids: list[str]) -> list[dict[str, Any] | None]:
+    # https://developer.spotify.com/documentation/web-api/reference/#/operations/get-several-audio-features
+    return sp.audio_features(ids)  # type: ignore
+
+
+def fetch_audio_features_all(sp: Spotify, ids: list[str]) -> list[dict[str, Any]]:
+    """渡したトラックの`audio features`をすべて取得して返します。渡される`id`は全て有効なものである必要があります。
+    取得に失敗した場合は、空リストを返します。"""
+    fetched = 0
+    fts: list[dict[str, Any] | None] = []
+
+    while fetched < len(ids):
+        if res := audio_features(sp, ids[fetched : fetched + 100]):
+            fts.extend(res)
+            fetched += 100
+        else:
+            return []
+
+    return [ft if ft is not None else {} for ft in fts]
+
+
+@automatic_retry
+def playlist_add_items(sp: Spotify, playlist_id: str, ids: list[str]):
+    sp.playlist_add_items(playlist_id, ids)
+
+
+def playlist_add_songs_all(sp: Spotify, playlist_id: str, ids: list[str]):
+    added = 0
+    while added < len(ids):
+        playlist_add_items(sp, playlist_id, ids[added : added + 100])
+        added += 100
+
+
+@automatic_retry
+def playlist_remove_all_occurrences_of_items(
+    sp: Spotify, playlist_id: str, ids: list[str]
+):
+    sp.playlist_remove_all_occurrences_of_items(playlist_id, ids)
+
+
+def playlist_remove_items_all(sp: Spotify, playlist_id: str):
+    ids = [track["id"] for track in fetch_playlist_songs_all(sp, playlist_id, False)]
+    removed = 0
+    while removed < len(ids):
+        playlist_remove_all_occurrences_of_items(
+            sp, playlist_id, ids[removed : removed + 100]
+        )
+        removed += 100
