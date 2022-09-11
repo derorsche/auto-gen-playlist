@@ -1,17 +1,16 @@
 from enum import Enum
 from logging import getLogger
+from random import randint, shuffle
 from typing import Any
 
-from scipy import spatial, stats
-from spotipy import Spotify
-
-from .api import (
+from auto_gen_playlist.spotify.api import (
     fetch_audio_features_all,
     fetch_playlist_songs_all,
     playlist_add_songs_all,
     playlist_remove_items_all,
-    recursively_remove_elements,
 )
+from scipy import spatial, stats
+from spotipy import Spotify
 
 logger = getLogger(__name__)
 
@@ -81,19 +80,21 @@ def sort_songs_by_similarity(
     return [ft["id"] for ft in fts]
 
 
-def generate_recommendation_from_playlist(
+def generate_recommendation_playlist(
     sp: Spotify,
     playlist_id: str,
-    idx: int,
     features: list[Features],
     *,
+    idx: int | None = None,
     count: int = 25,
     strict: bool = False,
-) -> list[dict[str, Any]]:
-    """プレイリストに含まれる曲の中から、`idx`で指定した曲に近い曲を選んで、これをシードにレコメンドされた曲を返します。
+    sort_by_bpm: bool = True,
+):
+    """プレイリストに含まれる曲の中から、`idx`で指定した曲に近い曲を選んで、これをシードにレコメンドされた曲でプレイリストを作成します。
     `strict=True`に設定した場合、より厳密に類似した曲を選ぶように指定します。
     `count`は返される曲数の最大値であり、必ずその曲数が返されることは保証されません。"""
     tracks = fetch_playlist_songs_all(sp, playlist_id, False)
+    idx = idx if idx is not None else randint(0, len(tracks) - 1)
     sorted_ids = sort_songs_by_similarity(sp, [t["id"] for t in tracks], idx, features)
 
     target_ft = sp.audio_features([tracks[idx]["id"]])[0]  # type: ignore
@@ -102,5 +103,36 @@ def generate_recommendation_from_playlist(
     else:
         load = {f"target_{f.value}": target_ft[f.value] for f in features}  # type: ignore  # noqa: E501
 
-    recoms = sp.recommendations(seed_tracks=sorted_ids[:5], limit=count, **load)
-    return recursively_remove_elements(recoms["tracks"])  # type: ignore
+    recoms: Any = sp.recommendations(seed_tracks=sorted_ids[:5], limit=count, **load)
+    recom_ids = [r["id"] for r in recoms["tracks"]]
+
+    if recom_ids:
+        seeds: Any = sp.tracks(sorted_ids[:5])
+        seeds = seeds["tracks"]
+        user: Any = sp.me()
+
+        if sort_by_bpm:
+            fts = fetch_audio_features_all(sp, recom_ids + [s["id"] for s in seeds])
+            fts.sort(key=lambda x: x["tempo"])
+            ids = [ft["id"] for ft in fts]
+            num = randint(0, len(ids) - 1)
+            ids = ids[num:] + ids[:num]
+
+        else:
+            ids = recom_ids + [s["id"] for s in seeds]
+            shuffle(ids)
+
+        pl: Any = sp.user_playlist_create(
+            user["id"],
+            "auto-gen-playlist",
+            public=False,
+            description="seeds songs: {}. selected features: {}.".format(
+                ", ".join([s["name"] for s in seeds]),
+                ", ".join([f.value for f in features]),
+            ),
+        )
+
+        playlist_add_songs_all(sp, pl["id"], ids)
+
+    else:
+        logger.error("No recommendation is generated via Spotify API, process skipped.")
