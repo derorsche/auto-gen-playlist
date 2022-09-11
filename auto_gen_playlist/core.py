@@ -4,7 +4,11 @@ from typing import Any
 
 from spotipy import Spotify
 
-from . import lastfm, spotify
+from auto_gen_playlist import lastfm, spotify
+from auto_gen_playlist.spotify.api import (
+    fetch_audio_features_all,
+    playlist_add_songs_all,
+)
 
 logger = getLogger(__name__)
 
@@ -47,14 +51,14 @@ async def generate_bimestrial_top_track_playlist(
         if len(song_ids) == count:
             break
 
-    user = sp.me()
-    pl = sp.user_playlist_create(
-        user["id"],  # type: ignore
+    user: Any = sp.me()
+    pl: Any = sp.user_playlist_create(
+        user["id"],
         f"Top Tracks {year} #{index}",
         False,
         description="created by auto_gen_playlist",
     )
 
-    fts: list[dict[str, Any]] = sp.audio_features(song_ids)  # type: ignore
+    fts = fetch_audio_features_all(sp, song_ids)
     fts.sort(key=lambda x: int(x["tempo"]))
-    sp.user_playlist_add_tracks(user["id"], pl["id"], [ft["id"] for ft in fts])  # type: ignore  # noqa: E501
+    playlist_add_songs_all(sp, pl["id"], [ft["id"] for ft in fts])
