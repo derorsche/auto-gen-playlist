@@ -3,10 +3,11 @@ from collections import Counter
 from datetime import datetime
 from logging import getLogger
 
-from auto_gen_playlist.lastfm.api import get_user_history
-from auto_gen_playlist.lastfm.misc import bisect_left_with_descending
-from auto_gen_playlist.vars import JST
 from dateutil.relativedelta import relativedelta
+
+from ..vars import JST
+from .api import get_user_history
+from .misc import bisect_left_with_descending
 
 logger = getLogger(__name__)
 

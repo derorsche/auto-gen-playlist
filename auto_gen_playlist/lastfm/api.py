@@ -6,8 +6,9 @@ from typing import Any, TypeVar
 from urllib.parse import urlencode
 
 from aiohttp import ClientError, ClientResponse
-from auto_gen_playlist.requests import fetch_all, fetch_one
-from auto_gen_playlist.vars import CACHE_DIR, JST
+
+from ..vars import CACHE_DIR, JST
+from .requests import fetch_all, fetch_one
 
 ROOT = "http://ws.audioscrobbler.com/2.0/?"
 T = TypeVar("T")

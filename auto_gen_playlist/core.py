@@ -4,12 +4,14 @@ from typing import Any
 
 from spotipy import Spotify
 
-from auto_gen_playlist import lastfm, spotify
+from . import lastfm, spotify
 
 logger = getLogger(__name__)
 
 
-async def generate_bimestrial_top_track_playlist(sp: Spotify, year: int, index: int):
+async def generate_bimestrial_top_track_playlist(
+    sp: Spotify, year: int, index: int, count: int = 45
+):
     """ユーザーの2か月間の再生回数上位曲でプレイリストを作成します。`index`には1から6の数字を指定できます。"""
     if not (1 <= index <= 6):
         logger.error(f"index must be from 1 to 6, got {index}.")
@@ -42,7 +44,7 @@ async def generate_bimestrial_top_track_playlist(sp: Spotify, year: int, index: 
             song_ids.append(song["id"])
         else:
             logger.info(f"Failed to find {track.artist} - {track.title}, song skipped.")
-        if len(song_ids) == 45:
+        if len(song_ids) == count:
             break
 
     user = sp.me()
