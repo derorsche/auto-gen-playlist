@@ -1,5 +1,6 @@
 import os
 from logging import getLogger
+from random import randrange, shuffle
 from typing import Any
 
 from spotipy import Spotify
@@ -14,7 +15,7 @@ logger = getLogger(__name__)
 
 
 async def generate_bimestrial_top_track_playlist(
-    sp: Spotify, year: int, index: int, count: int = 45
+    sp: Spotify, year: int, index: int, count: int = 45, *, sort_by_bpm: bool = True
 ):
     """ユーザーの2か月間の再生回数上位曲でプレイリストを作成します。`index`には1から6の数字を指定できます。"""
     if not (1 <= index <= 6):
@@ -60,5 +61,11 @@ async def generate_bimestrial_top_track_playlist(
     )
 
     fts = fetch_audio_features_all(sp, song_ids)
-    fts.sort(key=lambda x: int(x["tempo"]))
+    if sort_by_bpm:
+        fts.sort(key=lambda x: int(x["tempo"]))
+        num = randrange(0, len(fts))
+        fts = fts[num:] + fts[:num]
+    else:
+        shuffle(fts)
+
     playlist_add_songs_all(sp, pl["id"], [ft["id"] for ft in fts])

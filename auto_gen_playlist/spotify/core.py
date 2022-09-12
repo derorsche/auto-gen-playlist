@@ -58,7 +58,11 @@ def reorder_playlist_by_features(
         playlist_remove_items_all(sp, pl["id"])
         playlist_add_songs_all(sp, pl["id"], [ft["id"] for ft in fts])
         sp.user_playlist_change_details(
-            user["id"], pl["id"], description=f"sorted by {feature.value}"
+            user["id"],
+            pl["id"],
+            description="sorted by {} (range: {:.3f} - {:.3f})".format(
+                feature.value, fts[0][feature.value], fts[-1][feature.value]
+            ),  # noqa: E501
         )
 
 

@@ -1,6 +1,6 @@
 import asyncio
 from logging import Filter, LogRecord, config
-from random import choice
+from random import randint, sample
 
 import click
 import dotenv
@@ -37,7 +37,7 @@ def top_track():
     index = int(
         input("index (required, 1 <= index <= 6, 1: Jan-Feb, 2: Mar-Apr, ...): ")
     )
-    if res := input("number of songs (not required, default: 45): "):
+    if res := input("number of songs (optional, default: 45): "):
         count = int(res)
     else:
         count = 45
@@ -68,20 +68,18 @@ def reorder():
 def playlist():
     sp = spotipy.Spotify(auth_manager=spotipy.oauth2.SpotifyOAuth(scope=SCOPE))
     url = input("base playlist url (required): ")
-    if res := input("seed song index (not required, 1-indexed): "):
+    if res := input("seed song index (optional, 1-indexed): "):
         idx = int(res) - 1
     else:
         idx = None
     fts = [f for f in spotify.Features]
     print(", ".join([f"{cnt}: {e.value}" for cnt, e in enumerate(fts)]))
-    if res := input(
-        "specify the features (not required, int, white-space separated): "
-    ):
+    if res := input("specify the features (optional, int, white-space separated): "):
         features = [fts[int(i)] for i in res.split()]
     else:
-        features = [choice(fts)]
+        features = sample(fts, randint(1, 3))
 
-    spotify.generate_recommendation_playlist(sp, url, features, idx=idx)
+    spotify.generate_recommendation_playlist(sp, url, features, idx=idx, strict=True)
 
 
 cli.add_command(top_track)
