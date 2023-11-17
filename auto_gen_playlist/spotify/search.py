@@ -21,14 +21,14 @@ def _search_track(sp: Spotify, query: str = "") -> list[dict[str, Any]]:
 
 
 def find_track_in_spotify(sp: Spotify, title: str, artist: str) -> str | None:
-    """`Spotify`から指定した曲を検索して返します。候補が複数ある場合、
+    """`Spotify`から指定した曲の`id`を検索して返します。候補が複数ある場合、
 
     1. 各候補が含まれる広義のアルバム（シングル、コンピレーション及びアルバム）の中に、
     指定した`artist`の狭義のアルバムがあればそれに含まれる曲
     1. なければ指定した`artist`の広義のアルバムの中で最も曲数が多いものに含まれる曲
     1. いずれもなければ検索結果で最上位にきた曲
 
-    を返します。指定した曲名とアーティスト名に完全一致する曲がない場合、`None`を返します。"""
+    の`id`を返します。指定した曲名とアーティスト名に完全一致する曲がない場合、`None`を返します。"""
 
     def select(results: list[dict[str, Any]]) -> str | None:
         if res := [
