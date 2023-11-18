@@ -36,24 +36,36 @@ def find_track_in_spotify(sp: Spotify, title: str, artist: str) -> str | None:
         max_total = 0
 
         matched: list[dict[str, Any]] = []
+
+        # まず完全一致する曲を探す
         for track in results:
-            title_match = (
-                track["name"].casefold() in title.casefold()
-                or title.casefold() in track["name"].casefold()
-            )
+            if track["name"].casefold() == title.casefold():
+                for track_artist in track["artists"]:
+                    if track_artist["name"].casefold() == artist.casefold():
+                        matched.append(track)
+                        break
 
-            artist_match = False
-            for track_artist in track["artists"]:
-                if (
-                    track_artist["name"].casefold() in artist.casefold()
-                    or artist.casefold() in track_artist["name"].casefold()
-                ):
-                    artist_match = True
-                    break
+        # なければ、名称の一部を含む・一部が含まれる曲を探す
+        if matched == []:
+            for track in results[:10]:
+                title_match = (
+                    track["name"].casefold() in title.casefold()
+                    or title.casefold() in track["name"].casefold()
+                )
 
-            if title_match and artist_match:
-                matched.append(track)
+                artist_match = False
+                for track_artist in track["artists"]:
+                    if (
+                        track_artist["name"].casefold() in artist.casefold()
+                        or artist.casefold() in track_artist["name"].casefold()
+                    ):
+                        artist_match = True
+                        break
 
+                if title_match and artist_match:
+                    matched.append(track)
+
+        # 候補が複数ある場合に、優先順位に沿って選択する
         if matched:
             for idx, track in enumerate(matched):
                 album_artist_match = False
