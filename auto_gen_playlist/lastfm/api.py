@@ -6,6 +6,8 @@ from typing import Any, TypeVar
 from urllib.parse import urlencode
 
 from aiohttp import ClientError, ClientResponse
+
+from auto_gen_playlist.lastfm.misc import AGPLException
 from auto_gen_playlist.lastfm.requests import fetch_all, fetch_one
 from auto_gen_playlist.vars import CACHE_DIR, JST
 
@@ -171,7 +173,7 @@ async def fetch_tracks_all(user: str, refetch: bool = False):
 
 async def get_user_history(
     user: str, update: bool = False, refetch: bool = False
-) -> list[dict[str, Any]] | None:
+) -> list[dict[str, Any]]:
     """指定したユーザーの`scrobbles`のキャッシュを返します。`update=True`を指定した場合、先にキャッシュを更新します。
     これに加えて、`refetch=True`を指定したときは、キャッシュを破棄して全データを再取得します。
     キャッシュが存在しない場合や、`scrobbles`の取得に失敗した場合には、`None`を返します。"""
@@ -185,4 +187,7 @@ async def get_user_history(
             cache = json.load(f)
         return cache
 
-    return None
+    else:
+        raise AGPLException(
+            f"Failed to get_user_history({user=}, {update=}, {refetch=})"
+        )
