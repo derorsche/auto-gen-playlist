@@ -1,11 +1,8 @@
-from datetime import datetime
 from logging import getLogger
-from random import randint
-from typing import Any
 
 from spotipy import Spotify
 
-from .ft import Features, fetch_audio_features_all, sort_by_features, sort_by_similarity
+from .ft import Features, fetch_audio_features_all, sort_by_similarity
 from .playlist import (
     playlist_add_songs_all,
     playlist_fetch_songs_all,
@@ -63,21 +60,3 @@ def fetch_recommendation(
         seed_tracks=[ft["uri"] for ft in fts[:5]], limit=count, **load  # type: ignore
     )
     return [track["uri"] for track in res["tracks"]]  # type: ignore
-
-
-def make_recommendation_playlist(sp: Spotify, seed_id: str, seed_idx: int):
-    """シードとなるプレイリストと曲から新たにプレイリストを作成します。"""
-    uris = fetch_recommendation(
-        sp, playlist_fetch_songs_all(sp, seed_id), [], seed_idx, 25
-    )
-    uris = sort_by_features(sp, uris, Features.BPM)
-    num = randint(0, len(uris) - 1)
-    uris = uris[num:] + uris[:num]
-
-    user: Any = sp.me()
-    pl: Any = sp.user_playlist_create(
-        user["id"],
-        datetime.now().strftime("%Y%m%d_auto-gen-playlist_#%S"),
-        public=False,
-    )
-    playlist_add_songs_all(sp, pl["id"], uris)

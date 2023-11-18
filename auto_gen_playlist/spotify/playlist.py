@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, NamedTuple, ParamSpec, TypeVar
 
 from spotipy import Spotify, SpotifyException
 
@@ -9,6 +9,11 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 logger = getLogger(__name__)
+
+
+class Playlist(NamedTuple):
+    name: str
+    uri: str
 
 
 @automatic_retry
@@ -72,3 +77,25 @@ def playlist_remove_songs_all(sp: Spotify, id: str):
     while removed < len(ids):
         _playlist_remove_songs(sp, id, ids[removed : removed + 100])
         removed += 100
+
+
+@automatic_retry
+def _user_playlist(sp: Spotify, offset: int) -> dict[str, Any]:
+    return sp.current_user_playlists(limit=50, offset=offset)  # type: ignore
+
+
+def user_fetch_playlists_all(sp: Spotify):
+    """ユーザーのプレイリストをすべて取得して返します。"""
+
+    fetched, total = 0, 1
+    pls: list[Playlist] = []
+
+    while fetched < total:
+        res = _user_playlist(sp, fetched)
+        total: int = res["total"]  # type: ignore
+        fetched: int = fetched + res["limit"]  # type: ignore
+
+        for item in res["items"]:  # type: ignore
+            pls.append(Playlist(item["name"], item["uri"]))
+
+    return pls
