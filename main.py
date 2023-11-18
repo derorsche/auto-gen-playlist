@@ -59,7 +59,7 @@ async def main():
             refetch = False
         print()
 
-        print("To delete tha previous auto-generated top-track playlists, enter 'T'.")
+        print("To update tha previous auto-generated top-track playlists, enter 'T'.")
         if "T" == input("... "):
             update_old = True
         else:
