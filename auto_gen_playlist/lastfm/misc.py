@@ -8,6 +8,10 @@ _T = TypeVar("_T")
 logger = getLogger(__name__)
 
 
+class AGPLException(Exception):
+    pass
+
+
 @overload
 def bisect_left_with_descending(
     a: Sequence[T], x: T, lo: int = ..., hi: int | None = ..., *, key: None = ...

@@ -3,10 +3,11 @@ from collections import Counter
 from datetime import datetime
 from logging import getLogger
 
+from dateutil.relativedelta import relativedelta
+
 from auto_gen_playlist.lastfm.api import get_user_history
 from auto_gen_playlist.lastfm.misc import bisect_left_with_descending
 from auto_gen_playlist.vars import JST
-from dateutil.relativedelta import relativedelta
 
 logger = getLogger(__name__)
 
@@ -27,12 +28,8 @@ async def get_user_track_counter(
     update: bool = False,
     refetch: bool = False,
 ):
-    """`since <= track["date"] < until`を満たす期間の再生回数の`Counter`を返します。
-    データがない場合には、`None`を返します。"""
+    """`since <= track["date"] < until`を満たす期間の再生回数の`Counter`を返します。"""
     tracks = await get_user_history(user, update, refetch)
-
-    if tracks is None:
-        return
 
     since_ts = since.timestamp() if since is not None else 0
     until_ts = until.timestamp() if until is not None else 2_220_000_000
@@ -66,7 +63,7 @@ async def get_user_two_months_track_counter(
     year: int,
     month: int,
     *,
-    ignore_album: bool = False,
+    ignore_album: bool = True,
     update: bool = False,
     refetch: bool = False,
 ):
