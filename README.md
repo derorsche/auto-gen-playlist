@@ -1,1 +1,1 @@
-$python main.py <playlist/reorder/top-track>
+$python main.py
