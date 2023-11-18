@@ -28,39 +28,55 @@ def find_track_in_spotify(sp: Spotify, title: str, artist: str) -> str | None:
     1. なければ指定した`artist`の広義のアルバムの中で最も曲数が多いものに含まれる曲
     1. いずれもなければ検索結果で最上位にきた曲
 
-    の`id`を返します。指定した曲名とアーティスト名に完全一致する曲がない場合、`None`を返します。"""
+    の`uri`を返します。指定した曲名とアーティスト名に完全一致する曲がない場合、`None`を返します。"""
 
     def select(results: list[dict[str, Any]]) -> str | None:
-        if res := [
-            track
-            for track in results
-            if track["name"].casefold() == title.casefold()
-            and track["artists"][0]["name"].casefold() == artist.casefold()
-        ]:
-            album_idx: int | None = None
-            suspected_ep_idx = 0
-            max_total = 0
+        album_idx: int | None = None
+        suspected_ep_idx = 0
+        max_total = 0
 
-            for idx, track in enumerate(res):
+        matched: list[dict[str, Any]] = []
+        for track in results:
+            title_match = (
+                track["name"].casefold() in title.casefold()
+                or title.casefold() in track["name"].casefold()
+            )
+
+            artist_match = False
+            for track_artist in track["artists"]:
                 if (
-                    track["album"]["album_type"] == "album"
-                    and track["album"]["artists"][0]["name"].casefold()
-                    == artist.casefold()
+                    track_artist["name"].casefold() in artist.casefold()
+                    or artist.casefold() in track_artist["name"].casefold()
                 ):
+                    artist_match = True
+                    break
+
+            if title_match and artist_match:
+                matched.append(track)
+
+        if matched:
+            for idx, track in enumerate(matched):
+                album_artist_match = False
+                for album_artist in track["album"]["artists"]:
+                    if (
+                        album_artist["name"].casefold() in artist.casefold()
+                        or artist.casefold() in album_artist["name"].casefold()
+                    ):
+                        album_artist_match = True
+                        break
+
+                if album_artist_match and track["album"]["album_type"] == "album":
                     album_idx = idx
                     break
 
-                if (
-                    track["album"]["artists"][0]["name"].casefold() == artist.casefold()
-                    and track["album"]["total_tracks"] > max_total
-                ):
+                if album_artist_match and track["album"]["total_tracks"] > max_total:
                     max_total = track["album"]["total_tracks"]
                     suspected_ep_idx = idx
 
             return (
-                res[album_idx]["id"]
+                matched[album_idx]["uri"]
                 if album_idx is not None
-                else res[suspected_ep_idx]["id"]
+                else matched[suspected_ep_idx]["uri"]
             )
 
         else:
