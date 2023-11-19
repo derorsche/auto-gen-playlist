@@ -7,6 +7,7 @@ from yaml import safe_load
 
 from auto_gen_playlist.top_track import (
     generate_bimestrial_top_track_playlist,
+    generate_first_listened_songs_in_year_playlist,
     generate_recommended_playlist,
 )
 
@@ -35,7 +36,7 @@ async def main():
     sp = spotipy.Spotify(auth_manager=spotipy.oauth2.SpotifyOAuth(scope=SCOPE))
 
     print(
-        "To create a recommended playlist, enter a playlist URL.  To create a top-track playlist, press the enter key."  # noqa: E501
+        "To create recommended playlists, enter a playlist URL.  To create top-track / first-listened playlists, press the enter key."  # noqa: E501
     )
     url = input("... ")
     print()
@@ -52,6 +53,21 @@ async def main():
             print()
 
     else:
+        is_top_track = False
+
+        print(
+            "To create top-track playlists, enter '1'.  To create first-listened playlists, enter '2'."  # noqa: E501
+        )
+        if res := input("... "):
+            if res == "1":
+                is_top_track = True
+            elif res == "2":
+                is_top_track = False
+            else:
+                print("Invalid input.")
+                return
+        print()
+
         print("To delete tha cache and re-fetch the scrobbles, enter 'T'.")
         if "T" == input("... "):
             refetch = True
@@ -59,7 +75,9 @@ async def main():
             refetch = False
         print()
 
-        print("To update tha previous auto-generated top-track playlists, enter 'T'.")
+        print(
+            f"To update tha previous auto-generated {'top-track' if is_top_track else 'first-listened'} playlists, enter 'T'."  # noqa: E501
+        )
         if "T" == input("... "):
             update_old = True
         else:
@@ -73,9 +91,14 @@ async def main():
             year = None
         print()
 
-        await generate_bimestrial_top_track_playlist(
-            sp, refetch=refetch, update_old=update_old, since_year=year
-        )
+        if is_top_track:
+            await generate_bimestrial_top_track_playlist(
+                sp, refetch=refetch, update_old=update_old, since_year=year
+            )
+        else:
+            await generate_first_listened_songs_in_year_playlist(
+                sp, refetch=refetch, update_old=update_old, since_year=year
+            )
 
 
 if __name__ == "__main__":

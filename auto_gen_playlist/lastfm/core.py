@@ -24,7 +24,7 @@ async def get_user_track_counter(
     since: datetime | None = None,
     until: datetime | None = None,
     *,
-    ignore_album: bool = False,
+    ignore_album: bool = True,
     update: bool = False,
     refetch: bool = False,
 ):

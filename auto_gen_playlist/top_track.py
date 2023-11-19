@@ -1,11 +1,13 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from random import randint
 from typing import Any, Optional
 
 from dateutil.relativedelta import relativedelta
 from spotipy import Spotify
+
+from auto_gen_playlist.lastfm.core import Song
 
 from . import lastfm
 from .lastfm import api
@@ -46,6 +48,49 @@ async def fetch_two_months_top_tracks(
 
         if len(uris) == TRACK_COUNT:
             break
+
+    return list(uris)
+
+
+async def fetch_first_listened_songs_in_year(
+    sp: Spotify,
+    year: int,
+    threshold: int = 5,
+    update: bool = False,
+    refetch: bool = False,
+):
+    counter = await lastfm.get_user_track_counter(
+        os.environ["LAST_FM_USER_NAME"],
+        datetime(year, 1, 1, tzinfo=JST),
+        datetime(year + 1, 1, 1, tzinfo=JST) - timedelta(seconds=1),
+        update=update,
+        refetch=refetch,
+    )
+
+    previous_counter = await lastfm.get_user_track_counter(
+        os.environ["LAST_FM_USER_NAME"],
+        until=datetime(year, 1, 1, tzinfo=JST) - timedelta(seconds=1),
+    )
+    already_listened: set[Song] = set()
+
+    for track, count in previous_counter.most_common():
+        if count < threshold:
+            break
+
+        already_listened.add(track)
+
+    uris: set[str] = set()
+
+    for track, count in counter.most_common():
+        if track in already_listened:
+            continue
+        if count < threshold:
+            break
+
+        if uri := find_track_in_spotify(sp, track.title, track.artist):
+            uris.add(uri)
+        else:
+            logger.info(f"Failed to find {track.artist} - {track.title}, song skipped.")
 
     return list(uris)
 
@@ -93,10 +138,7 @@ async def generate_bimestrial_top_track_playlist(
 
         if target_pl is None:
             target_pl: Any = sp.user_playlist_create(
-                user["id"],
-                name,
-                public=False,
-                description=f"created by auto_gen_playlist on {datetime.now().strftime('%Y/%m/%d %H:%M')}",  # noqa: E501
+                user["id"], name, public=False, description=description
             )
 
         uris = await fetch_two_months_top_tracks(sp, since.year, since.month)
@@ -139,3 +181,59 @@ def generate_recommended_playlist(sp: Spotify, playlist_id: str, idx: int):
     )
 
     playlist_add_songs_all(sp, pl["id"], uris)
+
+
+async def generate_first_listened_songs_in_year_playlist(
+    sp: Spotify, refetch: bool, update_old: bool, since_year: Optional[int] = None
+):
+    if since_year:
+        await api.get_user_history(os.environ["LAST_FM_USER_NAME"], True, refetch)
+    else:
+        history = await api.get_user_history(
+            os.environ["LAST_FM_USER_NAME"], True, refetch
+        )
+        first = datetime.fromtimestamp(int(history[-1]["date"]["uts"]), tz=JST)
+        since_year = first.year
+
+    pls = user_fetch_playlists_all(sp)
+
+    while since_year <= datetime.now(tz=JST).year:
+        name = f"{since_year}01_First Listened Tracks {since_year}"
+        description = f"created by auto_gen_playlist on {datetime.now().strftime('%Y/%m/%d %H:%M')}"  # noqa: E501
+
+        target_pl = None
+        user: Any = sp.me()
+
+        if not update_old:
+            if name in [pl.name for pl in pls]:
+                since_year += 1
+                continue
+        else:
+            for pl in [pl for pl in pls if pl.name == name]:
+                target_pl = sp.playlist(pl.uri)
+                playlist_remove_songs_all(sp, target_pl["uri"])
+                sp.playlist_change_details(target_pl["uri"], description=description)
+                break
+
+        if target_pl is None:
+            target_pl: Any = sp.user_playlist_create(
+                user["id"], name, public=False, description=description
+            )
+
+        uris = await fetch_first_listened_songs_in_year(sp, since_year)
+
+        if len(uris) == 0:
+            logger.error(
+                "No listening data available in year {0}, process skipped.".format(  # noqa: E501
+                    since_year
+                )
+            )
+            since_year += 1
+            continue
+
+        uris = sort_by_features(sp, uris, Features.BPM)
+        num = randint(0, len(uris) - 1)
+        uris = uris[num:] + uris[:num]
+
+        playlist_add_songs_all(sp, target_pl["uri"], uris)
+        since_year += 1
